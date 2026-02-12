@@ -31,21 +31,36 @@ wind.changeTimer = 0
 wind.changeInterval = 240         -- frames between changes (~4 seconds at 60fps)
 
 -- Sprite setup
-local shipImage = gfx.image.new("images/capybara")
+local shipImage = gfx.image.new("images/kite")
 local shipSprite = gfx.sprite.new(shipImage)
-shipSprite:setCollideRect(4, 4, 56, 40)
+shipSprite:setCollideRect(4, 4, 20, 30)
 shipSprite:moveTo(ship.x, ship.y)
 shipSprite:add()
 
 -- collectable item setup
-local itemImage = gfx.image.new("images/rock")
+local itemImage = gfx.image.new("images/baloon")
 local itemSprite = gfx.sprite.new(itemImage)
 itemSprite.collisionResponse = gfx.sprite.KcollisionTypeOverlap
 itemW, itemH = itemSprite:getSize()
-itemSprite:setCollideRect(4, 4, itemW, itemH)
+itemSprite:setCollideRect(4, -1, itemW-4, itemH)
 itemSprite:moveTo(item.x, item.y)
 itemSprite:add()
 
+-- Obstacle 
+local obstacleSpeed = 5
+local obstacleImage = gfx.image.new("images/bird")
+local obstacleSprite = gfx.sprite.new(obstacleImage)
+obstacleSprite:setCollideRect(2, 0, 32, 32)
+obstacleSprite:moveTo(450, 240)
+obstacleSprite:add()
+
+-- game state
+local gameOver = false
+
+
+local function respawnObstacle()
+    obstacleSprite:moveTo(-50, math.random(50, 220))
+end
 
 -- --- Helpers ---
 local function clamp(v, lo, hi)
@@ -65,6 +80,20 @@ local function deg2rad(d) return d * math.pi / 180 end
 
 -- --- Update loop ---
 function pd.update()
+    if gameOver then
+        gfx.drawText("*Game Over*", 140, 100)
+        gfx.drawText("*Press A to restart", 110, 120)
+        if pd.buttonJustPressed(pd.kButtonA) then
+            gameOver = false
+            score = 0
+            ship.x, ship.y = 200, 120
+            ship.angle = 0
+            ship.turnVelocity = 0
+            respawnObstacle()
+        end
+        return
+    end
+
     gfx.sprite.update()
     -- 1) Read crank as "steering wheel" target direction
     local targetAngle = pd.getCrankPosition() -- 0..360
@@ -113,7 +142,32 @@ function pd.update()
             itemSprite:moveTo(item.x, item.y)
         end
     end
+    
+    local obstacleX, obstacleY = obstacleSprite:getPosition()
+    obstacleX = obstacleX + obstacleSpeed
 
+    -- Respawn when off-screen right
+    if obstacleX > 450 then
+        respawnObstacle()
+    else
+        obstacleSprite:moveTo(obstacleX, obstacleY)
+    end
+
+    -- Check collision with obstacle
+    for i = 1, #collisions do
+        if collisions[i] == obstacleSprite then
+            gameOver = true
+        end
+    end
+
+    if pd.buttonJustPressed(pd.kButtonB) then
+        gameOver = false
+        score = 0
+        ship.x, ship.y = 200, 120
+        ship.angle = 0
+        ship.turnVelocity = 0
+        respawnObstacle()
+    end
 
     -- 7) Optional debug display
     gfx.drawText("*Score: *" .. tostring(score), 10, 10)

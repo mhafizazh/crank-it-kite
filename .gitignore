@@ -1,0 +1,23 @@
+run.bat
+# Playdate compiled output
+*.pdx
+
+# Build artifacts
+build/
+*.o
+*.a
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
